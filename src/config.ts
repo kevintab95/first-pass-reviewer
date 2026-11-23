@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parse } from "yaml";
 import { z } from "zod";
+import { SEVERITIES } from "./findings.ts";
 
 const repoName = z.string().regex(/^[\w.-]+\/[\w.-]+$/, "must look like owner/repo");
 
@@ -63,6 +64,23 @@ export const ConfigSchema = z.strictObject({
       checkout: z.boolean().default(true),
       /** Glob patterns of changed files the agent should not review. */
       ignore: z.array(z.string()).default(DEFAULT_IGNORE),
+    })
+    .prefault({}),
+  review: z
+    .strictObject({
+      /** Body of the draft review. {{author}} is the PR author's login. */
+      body: z.string().default("Thanks @{{author}}! Left a few comments. PTAL"),
+      /** Severities drafted as comments; the rest appear in the report issue only. */
+      postSeverities: z.array(z.enum(SEVERITIES)).default(["correctness", "consistency"]),
+      /** Show the agent the reviewer's recent review comments on the repo, to match their voice. */
+      styleFromHistory: z.boolean().default(true),
+      /**
+       * Other people whose past review comments are also used as style examples, e.g. a
+       * maintainer whose reviews you'd like to write like. Your own comments always come first.
+       */
+      styleReviewers: z.array(z.string()).default([]),
+      /** How many past comments to use as style examples in total. */
+      styleExampleCount: z.number().int().min(1).max(50).default(15),
     })
     .prefault({}),
   limits: z

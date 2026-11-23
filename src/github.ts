@@ -146,3 +146,76 @@ export async function compare(
     throw err;
   }
 }
+
+export interface StyleExample {
+  /** Login of the person who wrote the comment. */
+  author: string;
+  repo: string;
+  pr: number;
+  path: string;
+  body: string;
+}
+
+interface ReviewContributionsResult {
+  user: {
+    contributionsCollection: {
+      pullRequestReviewContributions: {
+        nodes: {
+          pullRequest: { number: number; repository: { nameWithOwner: string } };
+          pullRequestReview: {
+            comments: { nodes: { body: string; path: string; replyTo: { id: string } | null }[] };
+          };
+        }[];
+      };
+    };
+  } | null;
+}
+
+const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
+/**
+ * A user's top-level review comments, newest first, used to show the agent how reviewers on a
+ * project write. These are public comments already posted. GitHub's contributions API covers at
+ * most one year per query, so this walks back year by year until `target` comments are found
+ * or `maxYears` have been searched.
+ */
+export async function listReviewerComments(
+  gh: GitHub,
+  login: string,
+  { target = 60, maxYears = 3, now = Date.now() } = {},
+): Promise<StyleExample[]> {
+  const found: StyleExample[] = [];
+  for (let year = 0; year < maxYears && found.length < target; year++) {
+    const to = new Date(now - year * YEAR_MS).toISOString();
+    const from = new Date(now - (year + 1) * YEAR_MS).toISOString();
+    const result = await gh.graphql<ReviewContributionsResult>(
+      `query($login: String!, $from: DateTime!, $to: DateTime!) {
+        user(login: $login) {
+          contributionsCollection(from: $from, to: $to) {
+            pullRequestReviewContributions(first: 100) {
+              nodes {
+                pullRequest { number repository { nameWithOwner } }
+                pullRequestReview { comments(first: 20) { nodes { body path replyTo { id } } } }
+              }
+            }
+          }
+        }
+      }`,
+      { login, from, to },
+    );
+    const nodes = result.user?.contributionsCollection.pullRequestReviewContributions.nodes ?? [];
+    for (const node of nodes) {
+      for (const c of node.pullRequestReview.comments.nodes) {
+        if (c.replyTo !== null) continue;
+        found.push({
+          author: login,
+          repo: node.pullRequest.repository.nameWithOwner,
+          pr: node.pullRequest.number,
+          path: c.path,
+          body: c.body.trim(),
+        });
+      }
+    }
+  }
+  return found;
+}

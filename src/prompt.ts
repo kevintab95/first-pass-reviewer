@@ -49,6 +49,11 @@ export function promptValues(meta: PrMeta, config: Config, prRoot: string): Reco
       ? "The repository at the PR head is checked out in `src/`. Read surrounding code there to confirm a problem before reporting it."
       : "The repository is not checked out; you only have the diff.",
     maxComments: String(config.limits.maxComments),
+    reviewer: config.reviewer,
+    styleNote: meta.styleExamples
+      ? `\`style/examples.md\` has ${meta.styleExamples} real review comments from this project's reviewers. Read it before writing, and write every \`comment\` the way ${config.reviewer} would.`
+      : "",
+    postSeverities: config.review.postSeverities.join(" and "),
     prRoot,
   };
 }

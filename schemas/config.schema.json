@@ -129,6 +129,42 @@
       },
       "additionalProperties": false
     },
+    "review": {
+      "default": {},
+      "type": "object",
+      "properties": {
+        "body": {
+          "default": "Thanks @{{author}}! Left a few comments. PTAL",
+          "type": "string"
+        },
+        "postSeverities": {
+          "default": ["correctness", "consistency"],
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["correctness", "consistency", "efficiency", "style"]
+          }
+        },
+        "styleFromHistory": {
+          "default": true,
+          "type": "boolean"
+        },
+        "styleReviewers": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "styleExampleCount": {
+          "default": 15,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "additionalProperties": false
+    },
     "limits": {
       "default": {},
       "type": "object",

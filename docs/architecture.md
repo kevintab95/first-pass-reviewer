@@ -25,6 +25,7 @@ a work directory. `cli.ts review` runs all six in one process for local use.
   focus.patch    incremental runs only: changes since the last reviewed commit
   src/           PR head checkout (no .git), when context.checkout is true
   guidance/      extra guidance files from the runner repo
+  style/         examples.md: the reviewer's past review comments, for voice (optional)
   out/           step outputs (see table above), issue.md in local runs
 ```
 
@@ -77,8 +78,11 @@ Agents return JSON matching `schemas/findings.schema.json` (generated from
 }
 ```
 
-`comment` goes into the draft review; `reasoning` only into the report issue.
-`post` keeps findings whose line is in the diff (multi-line ranges must be inside one
+`comment` is the only text that goes into the draft review: short, one concern, usually a
+question, in the reviewer's voice. `title`, `reasoning`, the optional `gapLocation` (where
+the real gap is when it lies outside the diff) and `summary` appear only in the report
+issue. The draft review's body comes from `review.body` in the config, not from the agent.
+`post` drafts only severities listed in `review.postSeverities`, and keeps findings whose line is in the diff (multi-line ranges must be inside one
 hunk), up to `limits.maxComments`, ordered by severity then confidence. The rest are shown
 in the report issue with the reason they were not drafted.
 

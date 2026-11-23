@@ -1,9 +1,15 @@
 // Split agent findings into those GitHub will accept as line comments and the rest.
 
 import { type CommentIndex, canComment } from "./diff.ts";
-import { type Finding, SEVERITIES } from "./findings.ts";
+import { type Finding, SEVERITIES, type Severity } from "./findings.ts";
 
-export type UnpostableReason = "not-in-diff" | "over-limit" | "duplicate";
+export type UnpostableReason = "not-in-diff" | "over-limit" | "duplicate" | "severity";
+
+export interface PartitionOptions {
+  maxComments: number;
+  /** Severities that may be drafted; others go to the report issue only. */
+  postSeverities: readonly Severity[];
+}
 
 export interface Partition {
   postable: Finding[];
@@ -23,7 +29,7 @@ export function sortFindings(findings: Finding[]): Finding[] {
 export function partitionFindings(
   findings: Finding[],
   index: CommentIndex,
-  maxComments: number,
+  { maxComments, postSeverities }: PartitionOptions,
 ): Partition {
   const postable: Finding[] = [];
   const unpostable: Partition["unpostable"] = [];
@@ -36,6 +42,10 @@ export function partitionFindings(
       continue;
     }
     seen.add(key);
+    if (!postSeverities.includes(finding.severity)) {
+      unpostable.push({ finding, reason: "severity" });
+      continue;
+    }
     if (!canComment(index, finding.path, finding.side, finding.line, finding.startLine)) {
       // A bad range start should not cost us the whole comment: retry as a single-line comment.
       if (

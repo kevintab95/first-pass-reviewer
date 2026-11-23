@@ -15,6 +15,13 @@ describe("config", () => {
     expect(config.agent.type).toBe("claude-code");
     expect(config.context.ignore).toEqual(DEFAULT_IGNORE);
     expect(config.limits.maxComments).toBe(15);
+    expect(config.review).toEqual({
+      body: "Thanks @{{author}}! Left a few comments. PTAL",
+      postSeverities: ["correctness", "consistency"],
+      styleFromHistory: true,
+      styleReviewers: [],
+      styleExampleCount: 15,
+    });
     expect(config.baseDir).toBe("/base");
   });
 

@@ -34,21 +34,26 @@ export type DraftReviewPayload = {
   comments: ReviewComment[];
 };
 
+/** Posted text is the comment alone: titles, reasoning and gap locations stay in the report issue. */
 export function commentBody(finding: Finding): string {
-  return `**${finding.title}**\n\n${finding.comment}`;
+  return finding.comment.trim();
+}
+
+export function reviewBody(template: string, entry: Pick<PlanEntry, "author">): string {
+  return template.replaceAll("{{author}}", entry.author);
 }
 
 /** Build the create-review request. Deliberately has no `event` field: the review stays a draft. */
 export function buildDraftReviewPayload(
   entry: Pick<PlanEntry, "repo" | "number" | "headSha">,
-  summary: string,
+  body: string,
   findings: Finding[],
 ): DraftReviewPayload {
   return {
     ...splitRepo(entry.repo),
     pull_number: entry.number,
     commit_id: entry.headSha,
-    body: summary,
+    body,
     comments: findings.map((f) => ({
       path: f.path,
       body: commentBody(f),
@@ -85,11 +90,10 @@ export async function runPost(config: Config, ws: Workspace): Promise<void> {
       continue;
     }
     const files = readJson<FileInfo[]>(ws.file(entry, "files.json"));
-    const partition = partitionFindings(
-      findings.findings,
-      buildCommentIndex(files),
-      config.limits.maxComments,
-    );
+    const partition = partitionFindings(findings.findings, buildCommentIndex(files), {
+      maxComments: config.limits.maxComments,
+      postSeverities: config.review.postSeverities,
+    });
     writeJson(ws.file(entry, "out", "partition.json"), partition);
 
     let result: PostResult;
@@ -108,7 +112,11 @@ export async function runPost(config: Config, ws: Workspace): Promise<void> {
         } else {
           const review = await createDraftReview(
             gh!,
-            buildDraftReviewPayload(entry, findings.summary, partition.postable),
+            buildDraftReviewPayload(
+              entry,
+              reviewBody(config.review.body, entry),
+              partition.postable,
+            ),
           );
           result = {
             status: "posted",

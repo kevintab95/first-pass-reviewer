@@ -1,10 +1,17 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildCommentIndex } from "../src/diff.ts";
-import { partitionFindings, sortFindings } from "../src/validate.ts";
+import { partitionFindings, type PartitionOptions, sortFindings } from "../src/validate.ts";
 import { finding } from "./helpers.ts";
 
 const patch = readFileSync(new URL("./fixtures/sample.patch", import.meta.url), "utf8");
+const all: PartitionOptions["postSeverities"] = [
+  "correctness",
+  "consistency",
+  "efficiency",
+  "style",
+];
+const opts = (maxComments: number): PartitionOptions => ({ maxComments, postSeverities: all });
 const index = buildCommentIndex([
   { path: "core/topic.py", status: "modified", additions: 3, deletions: 1, patch },
 ]);
@@ -18,14 +25,14 @@ describe("partitionFindings", () => {
         finding({ path: "other.py", title: "Other file" }),
       ],
       index,
-      10,
+      opts(10),
     );
     expect(result.postable).toHaveLength(1);
     expect(result.unpostable.map((u) => u.reason)).toEqual(["not-in-diff", "not-in-diff"]);
   });
 
   it("downgrades a bad multi-line range to a single-line comment", () => {
-    const result = partitionFindings([finding({ line: 43, startLine: 12 })], index, 10);
+    const result = partitionFindings([finding({ line: 43, startLine: 12 })], index, opts(10));
     expect(result.postable).toHaveLength(1);
     expect(result.postable[0]!.startLine).toBeUndefined();
   });
@@ -38,7 +45,7 @@ describe("partitionFindings", () => {
         finding({ severity: "correctness", confidence: "high", title: "High" }),
       ],
       index,
-      2,
+      opts(2),
     );
     expect(result.postable.map((f) => f.title)).toEqual(["High", "Low"]);
     expect(result.unpostable).toEqual([
@@ -47,9 +54,23 @@ describe("partitionFindings", () => {
   });
 
   it("drops duplicates", () => {
-    const result = partitionFindings([finding(), finding()], index, 10);
+    const result = partitionFindings([finding(), finding()], index, opts(10));
     expect(result.postable).toHaveLength(1);
     expect(result.unpostable[0]!.reason).toBe("duplicate");
+  });
+});
+
+describe("postSeverities", () => {
+  it("keeps non-drafted severities for the report only", () => {
+    const result = partitionFindings(
+      [finding(), finding({ severity: "efficiency", title: "Slow" })],
+      index,
+      { maxComments: 10, postSeverities: ["correctness", "consistency"] },
+    );
+    expect(result.postable.map((f) => f.title)).toEqual([finding().title]);
+    expect(result.unpostable).toEqual([
+      { finding: expect.objectContaining({ title: "Slow" }), reason: "severity" },
+    ]);
   });
 });
 

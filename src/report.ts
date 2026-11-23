@@ -52,6 +52,7 @@ const UNPOSTABLE_TEXT: Record<UnpostableReason, string> = {
     "not in the draft: the line is outside the PR diff, so GitHub won't accept a comment there",
   "over-limit": "not in the draft: over the per-review comment limit",
   duplicate: "not in the draft: duplicate of another finding",
+  severity: "report only: this severity is not drafted (see review.postSeverities)",
 };
 
 function postLine(entry: PlanEntry, post: PostResult | undefined): string {
@@ -123,6 +124,7 @@ export function renderReport(input: ReportInput): string {
         "",
         `#### ${n}. ${defang(finding.title)}`,
         `${lineLink(entry, finding)} · confidence: ${finding.confidence} · ${status}`,
+        ...(finding.gapLocation ? [`Actual gap: ${defang(finding.gapLocation)}`] : []),
         "",
         "**Draft comment**",
         quote(defang(finding.comment)),

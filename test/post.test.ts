@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildDraftReviewPayload, commentBody } from "../src/post.ts";
+import { buildDraftReviewPayload, commentBody, reviewBody } from "../src/post.ts";
 import { entry, finding } from "./helpers.ts";
 
 describe("buildDraftReviewPayload", () => {
@@ -33,6 +33,18 @@ describe("buildDraftReviewPayload", () => {
 
   it("posts only the comment text, never the private reasoning", () => {
     expect(JSON.stringify(payload)).not.toContain(finding().reasoning);
+  });
+});
+
+describe("comment and review text", () => {
+  it("posts the comment alone, without the report-only title", () => {
+    expect(commentBody(finding({ comment: " Should this be gated? " }))).toBe(
+      "Should this be gated?",
+    );
+  });
+
+  it("fills the author into the review body", () => {
+    expect(reviewBody("Thanks @{{author}}! PTAL", entry)).toBe("Thanks @bob! PTAL");
   });
 });
 
