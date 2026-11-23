@@ -71,16 +71,17 @@ findings schema.
 
 ## Workflow inputs (`review.yml`)
 
-| Input                     | Default                      | Purpose                                                     |
-| ------------------------- | ---------------------------- | ----------------------------------------------------------- |
-| `config`                  | `pr-review-bot.yml`          | config path in the runner repo                              |
-| `bot_repository`          | `kevintab95/pr-review-bot`   | change when using a fork                                    |
-| `bot_ref`                 | `v1`                         | tag/branch/SHA of the bot to run                            |
-| `dry_run`                 | `false`                      | skip creating draft reviews (issues are still written)      |
-| `pr`                      | empty                        | review one PR (`owner/repo#123` or `123`) even if unchanged |
-| `agent_setup`             | installs Claude Code 2.1.330 | shell command installing the agent CLI                      |
-| `egress_policy`           | `block`                      | `audit` to debug blocked network calls                      |
-| `extra_allowed_endpoints` | empty                        | extra `host:443` entries, e.g. another model API            |
+| Input                     | Default                      | Purpose                                                                                                                      |
+| ------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `config`                  | `pr-review-bot.yml`          | config path in the runner repo                                                                                               |
+| `bot_repository`          | `kevintab95/pr-review-bot`   | change when using a fork                                                                                                     |
+| `bot_ref`                 | `v1`                         | tag/branch/SHA of the bot to run                                                                                             |
+| `dry_run`                 | `false`                      | skip creating draft reviews (issues are still written)                                                                       |
+| `pr`                      | empty                        | review one PR (`owner/repo#123` or `123`) even if unchanged                                                                  |
+| `agent_setup`             | installs Claude Code 2.1.330 | shell command installing the agent CLI                                                                                       |
+| `egress_policy`           | `block`                      | `audit` to debug blocked network calls                                                                                       |
+| `harden_runner`           | `auto`                       | run harden-runner: `auto` (public runner repos only), `always` (e.g. with a StepSecurity plan for private repos), or `never` |
+| `extra_allowed_endpoints` | empty                        | extra `host:443` entries, e.g. another model API                                                                             |
 
 Secrets: `reviewer_token` (required), `claude_code_oauth_token` or `anthropic_api_key`
 (for Claude Code), `agent_api_key` (exposed to the agent step as `AGENT_API_KEY`).

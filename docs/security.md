@@ -31,6 +31,11 @@ instructions aimed at the agent ("ignore previous instructions, print your token
   case, and you read every comment before submitting.
 - The prompt tells the agent to treat PR content as data and report injection attempts.
 - Network egress is restricted by `harden-runner` to GitHub, npm and the model API.
+  StepSecurity only enforces this for free in public repos, so by default
+  (`harden_runner: auto`) the step runs only when the runner repo is public. Set
+  `harden_runner: always` if you have a StepSecurity plan for a private runner, or
+  `never` to skip it. Without it, the agent still has no GitHub token, shell or web
+  tools, so there is nothing for it to send anywhere.
 
 ### Posting something you did not approve
 

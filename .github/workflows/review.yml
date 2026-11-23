@@ -6,7 +6,8 @@
 #  - Each step gets only the secrets it needs. The agent step gets the model credential
 #    and nothing else; it never sees REVIEWER_TOKEN or GITHUB_TOKEN.
 #  - Logs contain counts and PR numbers only. No artifacts are uploaded.
-#  - Network egress is restricted to GitHub, npm and the model API.
+#  - Network egress is restricted to GitHub, npm and the model API by harden-runner, which by
+#    default runs only in public caller repos (see the harden_runner input).
 name: pr-review-bot
 
 on:
@@ -36,6 +37,12 @@ on:
         description: Shell command that installs the agent CLI.
         type: string
         default: npm install --global @anthropic-ai/claude-code@2.1.330
+      harden_runner:
+        description: >-
+          When to run StepSecurity harden-runner: "auto" (public caller repos only, since it
+          needs a StepSecurity plan in private repos), "always", or "never".
+        type: string
+        default: auto
       egress_policy:
         description: harden-runner egress policy, "block" or "audit" (use audit to debug blocked calls).
         type: string
@@ -75,7 +82,10 @@ jobs:
       WORK_DIR: ${{ github.workspace }}/../pr-review-work
       CLI: bot/node_modules/.bin/tsx bot/src/cli.ts
     steps:
+      # harden-runner is free in public repos but needs a StepSecurity plan in private ones
+      # (without one it enforces nothing and only adds a warning). See the harden_runner input.
       - name: Restrict network egress
+        if: ${{ inputs.harden_runner == 'always' || (inputs.harden_runner == 'auto' && !github.event.repository.private) }}
         uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
         with:
           egress-policy: ${{ inputs.egress_policy }}
