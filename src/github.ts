@@ -12,7 +12,7 @@ import type { CompareStatus, PrSummary } from "./select.ts";
 export type GitHub = Octokit;
 
 export function createGitHub(token: string): GitHub {
-  return new Octokit({ auth: token, userAgent: "pr-review-bot" });
+  return new Octokit({ auth: token, userAgent: "first-pass-reviewer" });
 }
 
 /** Token lookup: explicit env vars first, then the local `gh` CLI login (for local runs). */

@@ -1,6 +1,6 @@
 # PR review runner
 
-Private runner for [pr-review-bot](https://github.com/kevintab95/pr-review-bot): every day
+Private runner for [first-pass-reviewer](https://github.com/kevintab95/first-pass-reviewer): every day
 it pre-reviews the PRs waiting on me, leaves **draft** review comments only I can see, and
 opens an issue here with the full reasoning.
 

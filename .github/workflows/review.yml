@@ -8,7 +8,7 @@
 #  - Logs contain counts and PR numbers only. No artifacts are uploaded.
 #  - Network egress is restricted to GitHub, npm and the model API by harden-runner, which by
 #    default runs only in public caller repos (see the harden_runner input).
-name: pr-review-bot
+name: first-pass-reviewer
 
 on:
   workflow_call:
@@ -18,11 +18,11 @@ on:
         type: string
         default: pr-review-bot.yml
       bot_repository:
-        description: Repository that holds pr-review-bot (change if you use a fork).
+        description: Repository that holds first-pass-reviewer (change if you use a fork).
         type: string
-        default: kevintab95/pr-review-bot
+        default: kevintab95/first-pass-reviewer
       bot_ref:
-        description: Tag, branch or SHA of pr-review-bot to run. Pin a SHA for full reproducibility.
+        description: Tag, branch or SHA of first-pass-reviewer to run. Pin a SHA for full reproducibility.
         type: string
         default: v1
       dry_run:
@@ -70,7 +70,7 @@ permissions:
   issues: write
 
 concurrency:
-  group: pr-review-bot-${{ github.repository }}
+  group: first-pass-reviewer-${{ github.repository }}
   cancel-in-progress: false
 
 jobs:
@@ -107,7 +107,7 @@ jobs:
           path: runner
           persist-credentials: false
 
-      - name: Check out pr-review-bot
+      - name: Check out first-pass-reviewer
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ inputs.bot_repository }}

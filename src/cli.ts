@@ -16,7 +16,7 @@ import { runReport } from "./report.ts";
 import { runSweep } from "./sweep.ts";
 import { Workspace } from "./workspace.ts";
 
-const USAGE = `Usage: pr-review-bot <plan|prepare|agent|post|report|sweep|review> --config <file> [options]
+const USAGE = `Usage: first-pass-reviewer <plan|prepare|agent|post|report|sweep|review> --config <file> [options]
 
 Options:
   --config <file>        Path to pr-review-bot.yml (required)
