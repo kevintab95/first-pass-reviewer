@@ -29,12 +29,22 @@ export const FindingSchema = z.strictObject({
     .optional()
     .describe("First line of a multi-line comment; must be in the same diff hunk."),
   severity: z.enum(SEVERITIES),
-  title: z.string().min(1).max(120).describe("Short claim, e.g. 'Feature flag not enforced'."),
+  title: z
+    .string()
+    .min(1)
+    .max(120)
+    .describe("Short claim for the report issue (never posted), e.g. 'Feature flag not enforced'."),
   comment: z
     .string()
     .min(1)
     .describe(
-      "The draft review comment, addressed to the PR author in plain English: what goes wrong and what it causes. 1-4 sentences, may include a suggested fix.",
+      "The draft review comment, in the reviewer's voice: one concern, 1-2 sentences, usually a question that names what the author should check or do and points to existing code to follow. No evidence or call-path traces.",
+    ),
+  gapLocation: z
+    .string()
+    .optional()
+    .describe(
+      "When the real gap is in code outside the diff (e.g. a job that should also be updated), its file:line or symbol. The comment itself stays on the related changed line.",
     ),
   reasoning: z
     .string()
@@ -48,7 +58,9 @@ export const FindingSchema = z.strictObject({
 export const FindingsSchema = z.strictObject({
   summary: z
     .string()
-    .describe("2-4 plain-English sentences: what the PR does and the main concerns, if any."),
+    .describe(
+      "For the reviewer's report only (never posted): 2-4 plain-English sentences on what the PR does and the main concerns, if any.",
+    ),
   findings: z.array(FindingSchema),
 });
 

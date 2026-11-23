@@ -70,6 +70,8 @@ export interface PrMeta {
   /** Guidance files available to the agent, relative to the PR directory. */
   guidance: string[];
   checkedOut: boolean;
+  /** Number of the reviewer's past comments in style/examples.md (0 when none). */
+  styleExamples?: number;
 }
 
 export type PostStatus =

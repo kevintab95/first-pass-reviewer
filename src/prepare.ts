@@ -6,9 +6,18 @@ import { copyFileSync, mkdirSync, rmSync } from "node:fs";
 import path from "node:path";
 import { type Config, resolveFromConfig } from "./config.ts";
 import { diffLineCount, matchesAny, renderDiff } from "./diff.ts";
-import { compare, createGitHub, getPr, listPrFiles, resolveToken } from "./github.ts";
+import {
+  compare,
+  createGitHub,
+  getPr,
+  listPrFiles,
+  listReviewerComments,
+  resolveToken,
+  type StyleExample,
+} from "./github.ts";
 import { describeError, log } from "./log.ts";
 import { findRepoGuidance, renderPrompt } from "./prompt.ts";
+import { pickStyleExamples, renderStyleExamples } from "./style.ts";
 import type { FileContext, FileInfo, PlanEntry, PrMeta } from "./types.ts";
 import { readJson, type Workspace, writeJson, writeText } from "./workspace.ts";
 
@@ -64,10 +73,23 @@ function checkout(repo: string, sha: string, dest: string): void {
 export async function runPrepare(config: Config, ws: Workspace): Promise<void> {
   const plan = ws.readPlan();
   const gh = createGitHub(resolveToken(["REVIEWER_TOKEN", "GH_TOKEN"]));
+  const stylePools: StyleExample[][] = [];
+  if (config.review.styleFromHistory && plan.entries.length) {
+    const logins = [config.reviewer, ...config.review.styleReviewers].filter(
+      (login, i, all) => all.findIndex((l) => l.toLowerCase() === login.toLowerCase()) === i,
+    );
+    for (const login of logins) {
+      try {
+        stylePools.push(await listReviewerComments(gh, login));
+      } catch (err) {
+        log.warn(`could not load style examples for one reviewer (${describeError(err)})`);
+      }
+    }
+  }
   let prepared = 0;
   for (const entry of plan.entries) {
     try {
-      await preparePr(config, ws, gh, entry);
+      await preparePr(config, ws, gh, entry, stylePools);
       prepared += 1;
     } catch (err) {
       log.warn(`${entry.repo}#${entry.number}: prepare failed (${describeError(err)})`);
@@ -85,6 +107,7 @@ async function preparePr(
   ws: Workspace,
   gh: ReturnType<typeof createGitHub>,
   entry: PlanEntry,
+  stylePools: StyleExample[][],
 ): Promise<void> {
   const dir = ws.dir(entry);
   rmSync(dir, { recursive: true, force: true });
@@ -132,6 +155,14 @@ async function preparePr(
     guidance.push(target);
   }
 
+  const examples = pickStyleExamples(stylePools, entry, config.review.styleExampleCount);
+  if (examples.length) {
+    writeText(
+      ws.file(entry, "style", "examples.md"),
+      renderStyleExamples(config.reviewer, examples),
+    );
+  }
+
   const pr = await getPr(gh, entry.repo, entry.number);
   const meta: PrMeta = {
     repo: entry.repo,
@@ -147,6 +178,7 @@ async function preparePr(
     files: context,
     guidance,
     checkedOut,
+    styleExamples: examples.length,
   };
   writeJson(ws.file(entry, "meta.json"), meta);
   writeText(ws.file(entry, "prompt.md"), renderPrompt(meta, config, dir));

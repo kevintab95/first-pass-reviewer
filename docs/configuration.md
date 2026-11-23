@@ -31,6 +31,13 @@ context:
   checkout: true # check out the PR head so the agent can read surrounding code
   ignore: ["**/package-lock.json", "**/*.min.js", ...] # changed files to leave out
 
+review:
+  body: "Thanks @{{author}}! Left a few comments. PTAL" # draft review body; {{author}} = PR author
+  postSeverities: [correctness, consistency] # drafted as comments; others go to the report only
+  styleFromHistory: true # show the agent your recent review comments so drafts match your voice
+  styleReviewers: [] # other maintainers whose comments are also used as examples, e.g. [seanlip]
+  styleExampleCount: 15 # how many past comments to use in total
+
 limits:
   maxPrsPerRun: 5
   maxFiles: 60 # changed files shown to the agent
@@ -48,13 +55,18 @@ issues:
    changed file. Where a directory has no `AGENTS.md`, its `CLAUDE.md` is used instead.
 2. `CONTRIBUTING.md` (or `.github/CONTRIBUTING.md`).
 3. Your `prompt.extraGuidance` files.
+4. With `review.styleFromHistory`, up to `review.styleExampleCount` recent top-level review
+   comments (up to 3 years back, from GitHub's contributions API) by you and by anyone in
+   `review.styleReviewers`, taking turns with yours first, written to `style/examples.md`. Comments on the PR under review are never included. They are
+   already public, and they are used only to match your voice.
 
 ## Custom prompt templates
 
 Copy `prompts/review.md` and point `prompt.template` at it. Available placeholders:
 `{{repo}}`, `{{number}}`, `{{title}}`, `{{author}}`, `{{baseRef}}`, `{{headSha}}`,
 `{{mode}}`, `{{scope}}`, `{{guidance}}`, `{{fileCount}}`, `{{includedCount}}`,
-`{{excludedNote}}`, `{{sourceNote}}`, `{{maxComments}}`. The output must still match the
+`{{excludedNote}}`, `{{sourceNote}}`, `{{maxComments}}`, `{{reviewer}}`, `{{styleNote}}`,
+`{{postSeverities}}`. The output must still match the
 findings schema.
 
 ## Workflow inputs (`review.yml`)

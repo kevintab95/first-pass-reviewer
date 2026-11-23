@@ -3,7 +3,7 @@ import { advancesState, defang, issueTitle, renderReport } from "../src/report.t
 import { entry, finding } from "./helpers.ts";
 
 describe("renderReport", () => {
-  const inDiff = finding();
+  const inDiff = finding({ gapLocation: "core/jobs/migration.py:40" });
   const outside = finding({ line: 300, title: "Outside the diff", severity: "efficiency" });
   const text = renderReport({
     entry,
@@ -22,6 +22,7 @@ describe("renderReport", () => {
     expect(text).toContain(`> ${inDiff.comment}`);
     expect(text).toContain("in the draft");
     expect(text).toContain("outside the PR diff");
+    expect(text).toContain("Actual gap: core/jobs/migration.py:40");
   });
 
   it("links to the reviewed commit and the Files changed tab", () => {
