@@ -1,0 +1,13 @@
+@@ -10,6 +10,8 @@ def save(topic):
+     validate(topic)
+-    old = fetch(topic.id)
++    old = fetch(topic.id, version=topic.version)
++    carry_forward(old, topic)
+     commit(topic)
+     notify(topic)
+ 
+@@ -40,3 +42,4 @@ def delete(topic):
+     remove(topic)
++    cleanup(topic)
+     done()
+\ No newline at end of file

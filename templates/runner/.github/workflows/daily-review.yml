@@ -1,0 +1,32 @@
+name: daily-review
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # daily at 07:00 UTC; GitHub may start scheduled runs a little late
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Do everything except create draft reviews
+        type: boolean
+        default: false
+      pr:
+        description: Review only this PR (owner/repo#123, or 123 with one repo)
+        type: string
+        default: ""
+
+# Never add pull_request or pull_request_target triggers here.
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  review:
+    uses: kevintab95/pr-review-bot/.github/workflows/review.yml@v1
+    with:
+      config: pr-review-bot.yml
+      dry_run: ${{ inputs.dry_run == true }}
+      pr: ${{ inputs.pr }}
+    secrets:
+      reviewer_token: ${{ secrets.REVIEWER_TOKEN }}
+      claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

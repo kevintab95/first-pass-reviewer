@@ -1,0 +1,162 @@
+# Reusable workflow: call it from your own (preferably private) runner repo on a schedule.
+# See templates/runner/.github/workflows/daily-review.yml for a caller.
+#
+# Security model (docs/security.md):
+#  - Only callable via workflow_call; it never runs on pull_request events.
+#  - Each step gets only the secrets it needs. The agent step gets the model credential
+#    and nothing else; it never sees REVIEWER_TOKEN or GITHUB_TOKEN.
+#  - Logs contain counts and PR numbers only. No artifacts are uploaded.
+#  - Network egress is restricted to GitHub, npm and the model API.
+name: pr-review-bot
+
+on:
+  workflow_call:
+    inputs:
+      config:
+        description: Path to the config file in the calling repo.
+        type: string
+        default: pr-review-bot.yml
+      bot_repository:
+        description: Repository that holds pr-review-bot (change if you use a fork).
+        type: string
+        default: kevintab95/pr-review-bot
+      bot_ref:
+        description: Tag, branch or SHA of pr-review-bot to run. Pin a SHA for full reproducibility.
+        type: string
+        default: v1
+      dry_run:
+        description: Do everything except create draft reviews.
+        type: boolean
+        default: false
+      pr:
+        description: Review only this PR (owner/repo#123, or 123 with one repo), even if unchanged.
+        type: string
+        default: ""
+      agent_setup:
+        description: Shell command that installs the agent CLI.
+        type: string
+        default: npm install --global @anthropic-ai/claude-code@2.1.330
+      egress_policy:
+        description: harden-runner egress policy, "block" or "audit" (use audit to debug blocked calls).
+        type: string
+        default: block
+      extra_allowed_endpoints:
+        description: Extra host:port entries to allow, space-separated (e.g. another model API).
+        type: string
+        default: ""
+    secrets:
+      reviewer_token:
+        description: Classic PAT of the reviewer with the public_repo scope (repo scope for private repos).
+        required: true
+      claude_code_oauth_token:
+        description: From `claude setup-token` (uses your Claude subscription).
+        required: false
+      anthropic_api_key:
+        description: Alternative to claude_code_oauth_token (pay-as-you-go API).
+        required: false
+      agent_api_key:
+        description: Credential for a non-Claude agent; exposed to the agent step as AGENT_API_KEY.
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: pr-review-bot-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CONFIG: runner/${{ inputs.config }}
+      WORK_DIR: ${{ github.workspace }}/../pr-review-work
+      CLI: bot/node_modules/.bin/tsx bot/src/cli.ts
+    steps:
+      - name: Restrict network egress
+        uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
+        with:
+          egress-policy: ${{ inputs.egress_policy }}
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            codeload.github.com:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            raw.githubusercontent.com:443
+            registry.npmjs.org:443
+            nodejs.org:443
+            api.anthropic.com:443
+            ${{ inputs.extra_allowed_endpoints }}
+
+      - name: Check out runner config
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: runner
+          persist-credentials: false
+
+      - name: Check out pr-review-bot
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.bot_repository }}
+          ref: ${{ inputs.bot_ref }}
+          path: bot
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install
+        env:
+          AGENT_SETUP: ${{ inputs.agent_setup }}
+        run: |
+          npm ci --prefix bot --no-audit --no-fund
+          bash -c "$AGENT_SETUP"
+
+      - name: Plan
+        env:
+          REVIEWER_TOKEN: ${{ secrets.reviewer_token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=(plan --config "$CONFIG" --work-dir "$WORK_DIR")
+          [ -n "$PR" ] && args+=(--pr "$PR")
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          $CLI "${args[@]}"
+
+      - name: Prepare
+        env:
+          REVIEWER_TOKEN: ${{ secrets.reviewer_token }}
+        run: $CLI prepare --config "$CONFIG" --work-dir "$WORK_DIR"
+
+      # The only step that runs AI. It receives the model credential and nothing else.
+      - name: Review (agent)
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.claude_code_oauth_token }}
+          ANTHROPIC_API_KEY: ${{ secrets.anthropic_api_key }}
+          AGENT_API_KEY: ${{ secrets.agent_api_key }}
+        run: $CLI agent --config "$CONFIG" --work-dir "$WORK_DIR"
+
+      - name: Post draft reviews
+        env:
+          REVIEWER_TOKEN: ${{ secrets.reviewer_token }}
+        run: $CLI post --config "$CONFIG" --work-dir "$WORK_DIR"
+
+      - name: Write report issues
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: $CLI report --config "$CONFIG" --work-dir "$WORK_DIR"
+
+      - name: Close issues for finished PRs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REVIEWER_TOKEN: ${{ secrets.reviewer_token }}
+        run: $CLI sweep --config "$CONFIG" --work-dir "$WORK_DIR"
+
+      - name: Remove work files
+        if: always()
+        run: rm -rf "$WORK_DIR"
