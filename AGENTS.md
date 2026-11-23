@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guide for AI coding agents (and humans) working on **pr-review-bot**. This is the only
+Guide for AI coding agents (and humans) working on **first-pass-reviewer**. This is the only
 agent-instructions file in the repo; any agent (Claude Code, Codex, Gemini CLI, Cursor, …)
 should read it before changing anything.
 

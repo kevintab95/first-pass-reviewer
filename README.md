@@ -1,8 +1,9 @@
-# pr-review-bot
+# first-pass-reviewer
 
-A daily AI pre-review of the pull requests waiting on you. It leaves **draft review
-comments that only you can see**, so you can edit, delete or add to them and submit the
-review yourself. It never approves, requests changes or comments publicly on your behalf.
+Your first pass on every PR waiting on you. Each day it reviews the pull requests assigned
+to you or awaiting your review and leaves **draft review comments that only you can see**,
+written in your own style. You edit, delete or add to them and submit the review yourself.
+It never approves, requests changes or comments publicly on your behalf.
 
 For each PR assigned to you or awaiting your review, it:
 

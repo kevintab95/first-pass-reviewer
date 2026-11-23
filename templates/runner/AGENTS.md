@@ -1,7 +1,7 @@
 # AGENTS.md
 
-This is a **pr-review-bot runner repo**: configuration only. The bot's code lives in the
-public `pr-review-bot` repository and is called from `.github/workflows/daily-review.yml`.
+This is a **first-pass-reviewer runner repo**: configuration only. The bot's code lives in the
+public `first-pass-reviewer` repository and is called from `.github/workflows/daily-review.yml`.
 Read the bot's `AGENTS.md` and `docs/` before changing how the bot works; change it there,
 not here.
 

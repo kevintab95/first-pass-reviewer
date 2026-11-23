@@ -2,6 +2,10 @@
 
 The runner repo holds `pr-review-bot.yml`. Only `reviewer` and `repos` are required.
 Relative paths resolve against the config file's directory. Unknown keys are rejected.
+
+The project was renamed from `pr-review-bot`. For compatibility, the default config file
+name (`pr-review-bot.yml`), the report-issue label (`pr-review-bot`) and the hidden issue
+state marker (`<!-- pr-review-bot:state ... -->`) keep the old name.
 Machine-readable schema: [`schemas/config.schema.json`](../schemas/config.schema.json).
 
 ```yaml
@@ -24,7 +28,7 @@ agent:
   env: [] # type "command" only: env vars to pass ("NAME" or "TARGET=SOURCE")
 
 prompt:
-  template: prompts/custom.md # optional; defaults to prompts/review.md in pr-review-bot
+  template: prompts/custom.md # optional; defaults to prompts/review.md in first-pass-reviewer
   extraGuidance: [guidance/project.md] # files copied into guidance/ for the agent
 
 context:
@@ -71,17 +75,17 @@ findings schema.
 
 ## Workflow inputs (`review.yml`)
 
-| Input                     | Default                      | Purpose                                                                                                                      |
-| ------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `config`                  | `pr-review-bot.yml`          | config path in the runner repo                                                                                               |
-| `bot_repository`          | `kevintab95/pr-review-bot`   | change when using a fork                                                                                                     |
-| `bot_ref`                 | `v1`                         | tag/branch/SHA of the bot to run                                                                                             |
-| `dry_run`                 | `false`                      | skip creating draft reviews (issues are still written)                                                                       |
-| `pr`                      | empty                        | review one PR (`owner/repo#123` or `123`) even if unchanged                                                                  |
-| `agent_setup`             | installs Claude Code 2.1.330 | shell command installing the agent CLI                                                                                       |
-| `egress_policy`           | `block`                      | `audit` to debug blocked network calls                                                                                       |
-| `harden_runner`           | `auto`                       | run harden-runner: `auto` (public runner repos only), `always` (e.g. with a StepSecurity plan for private repos), or `never` |
-| `extra_allowed_endpoints` | empty                        | extra `host:443` entries, e.g. another model API                                                                             |
+| Input                     | Default                          | Purpose                                                                                                                      |
+| ------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `config`                  | `pr-review-bot.yml`              | config path in the runner repo                                                                                               |
+| `bot_repository`          | `kevintab95/first-pass-reviewer` | change when using a fork                                                                                                     |
+| `bot_ref`                 | `v1`                             | tag/branch/SHA of the bot to run                                                                                             |
+| `dry_run`                 | `false`                          | skip creating draft reviews (issues are still written)                                                                       |
+| `pr`                      | empty                            | review one PR (`owner/repo#123` or `123`) even if unchanged                                                                  |
+| `agent_setup`             | installs Claude Code 2.1.330     | shell command installing the agent CLI                                                                                       |
+| `egress_policy`           | `block`                          | `audit` to debug blocked network calls                                                                                       |
+| `harden_runner`           | `auto`                           | run harden-runner: `auto` (public runner repos only), `always` (e.g. with a StepSecurity plan for private repos), or `never` |
+| `extra_allowed_endpoints` | empty                            | extra `host:443` entries, e.g. another model API                                                                             |
 
 Secrets: `reviewer_token` (required), `claude_code_oauth_token` or `anthropic_api_key`
 (for Claude Code), `agent_api_key` (exposed to the agent step as `AGENT_API_KEY`).

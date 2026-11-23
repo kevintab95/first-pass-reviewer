@@ -1,6 +1,6 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/kevintab95/pr-review-bot/v1/schemas/config.schema.json
-# Configuration for pr-review-bot. Every key is documented in docs/configuration.md
-# of the pr-review-bot repo; only `reviewer` and `repos` are required.
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kevintab95/first-pass-reviewer/v1/schemas/config.schema.json
+# Configuration for first-pass-reviewer. Every key is documented in docs/configuration.md
+# of the first-pass-reviewer repo; only `reviewer` and `repos` are required.
 
 # Your GitHub login: PRs waiting on you are reviewed, and draft reviews are created as you.
 reviewer: your-github-login

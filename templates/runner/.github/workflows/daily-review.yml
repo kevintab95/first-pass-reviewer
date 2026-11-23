@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   review:
-    uses: kevintab95/pr-review-bot/.github/workflows/review.yml@v1
+    uses: kevintab95/first-pass-reviewer/.github/workflows/review.yml@v1
     with:
       config: pr-review-bot.yml
       dry_run: ${{ inputs.dry_run == true }}
