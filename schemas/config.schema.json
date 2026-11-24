@@ -26,6 +26,11 @@
           "default": true,
           "type": "boolean"
         },
+        "match": {
+          "default": "any",
+          "type": "string",
+          "enum": ["any", "all"]
+        },
         "skipDraftPrs": {
           "default": true,
           "type": "boolean"

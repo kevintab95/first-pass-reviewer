@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseConfig } from "../src/config.ts";
-import { decide, matchesSelection, type PrSummary } from "../src/select.ts";
+import { decide, matchesSelection, needsReviewHistory, type PrSummary } from "../src/select.ts";
 
 const config = parseConfig({ reviewer: "alice", repos: ["org/repo"] }, "/tmp");
 const pr = (overrides: Partial<PrSummary>): PrSummary => ({
@@ -48,6 +48,63 @@ describe("matchesSelection", () => {
     expect(matchesSelection(pr({ assignees: ["alice"], labels: ["Ready"] }), onlyAssigned)).toBe(
       true,
     );
+  });
+});
+
+describe("select.match: all", () => {
+  const all = parseConfig(
+    { reviewer: "alice", repos: ["org/repo"], select: { match: "all" } },
+    "/tmp",
+  );
+
+  it("requires the reviewer to be both assigned and a reviewer", () => {
+    expect(matchesSelection(pr({ assignees: ["alice"] }), all)).toBe(false);
+    expect(matchesSelection(pr({ requestedReviewers: ["alice"] }), all)).toBe(false);
+    expect(matchesSelection(pr({ assignees: ["Alice"], requestedReviewers: ["alice"] }), all)).toBe(
+      true,
+    );
+  });
+
+  it("counts a past review as being a reviewer (GitHub drops it from requested reviewers)", () => {
+    expect(matchesSelection(pr({ assignees: ["alice"], pastReviewers: ["ALICE"] }), all)).toBe(
+      true,
+    );
+    expect(matchesSelection(pr({ assignees: ["alice"], pastReviewers: ["carol"] }), all)).toBe(
+      false,
+    );
+    // A past review alone is not enough without the assignment.
+    expect(matchesSelection(pr({ pastReviewers: ["alice"] }), all)).toBe(false);
+  });
+
+  it("asks for review history only when it could change the answer", () => {
+    expect(needsReviewHistory(pr({ assignees: ["alice"] }), all)).toBe(true);
+    expect(needsReviewHistory(pr({ assignees: ["carol"] }), all)).toBe(false);
+    expect(
+      needsReviewHistory(pr({ assignees: ["alice"], requestedReviewers: ["alice"] }), all),
+    ).toBe(false);
+    expect(needsReviewHistory(pr({ assignees: ["alice"], draft: true }), all)).toBe(false);
+    expect(needsReviewHistory(pr({ assignees: ["alice"] }), config)).toBe(false);
+  });
+
+  it("only checks the enabled conditions", () => {
+    const assignedOnly = parseConfig(
+      {
+        reviewer: "alice",
+        repos: ["org/repo"],
+        select: { match: "all", reviewRequested: false },
+      },
+      "/tmp",
+    );
+    expect(matchesSelection(pr({ assignees: ["alice"] }), assignedOnly)).toBe(true);
+    const neither = parseConfig(
+      {
+        reviewer: "alice",
+        repos: ["org/repo"],
+        select: { match: "all", assigned: false, reviewRequested: false },
+      },
+      "/tmp",
+    );
+    expect(matchesSelection(pr({ assignees: ["alice"] }), neither)).toBe(false);
   });
 });
 
