@@ -7,12 +7,13 @@ import {
   getPr,
   hasPendingReview,
   listOpenPrs,
+  listPastReviewers,
   type OpenPr,
   resolveToken,
 } from "./github.ts";
 import { loadIssueIndex, type ReportIssue } from "./issues.ts";
 import { describeError, jobSummary, log } from "./log.ts";
-import { decide, matchesSelection } from "./select.ts";
+import { decide, matchesSelection, needsReviewHistory } from "./select.ts";
 import { prKey } from "./state.ts";
 import type { Plan, PlanEntry, SkippedPr } from "./types.ts";
 import { prDir, type Workspace } from "./workspace.ts";
@@ -52,7 +53,15 @@ export async function runPlan(config: Config, ws: Workspace, options: PlanOption
   } else {
     for (const repo of config.repos) {
       const prs = await listOpenPrs(reviewerGh, repo);
-      const selected = prs.filter((pr) => matchesSelection(pr, config));
+      const selected: OpenPr[] = [];
+      for (const pr of prs) {
+        if (matchesSelection(pr, config)) {
+          selected.push(pr);
+        } else if (needsReviewHistory(pr, config)) {
+          const pastReviewers = await listPastReviewers(reviewerGh, repo, pr.number);
+          if (matchesSelection({ ...pr, pastReviewers }, config)) selected.push(pr);
+        }
+      }
       log.info(`${repo}: ${prs.length} open PRs, ${selected.length} match the selection`);
       candidates.push(...selected.map((pr) => ({ repo, pr })));
     }

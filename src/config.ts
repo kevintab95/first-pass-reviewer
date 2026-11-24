@@ -28,6 +28,12 @@ export const ConfigSchema = z.strictObject({
       assigned: z.boolean().default(true),
       /** Review PRs where the reviewer is a requested reviewer. */
       reviewRequested: z.boolean().default(true),
+      /**
+       * How to combine `assigned` and `reviewRequested`: "any" reviews a PR matching either,
+       * "all" only PRs matching every enabled one. Under "all", a reviewer who has already
+       * submitted a review still counts, since GitHub drops them from the requested reviewers.
+       */
+      match: z.enum(["any", "all"]).default("any"),
       /** Skip PRs the author has marked as draft. */
       skipDraftPrs: z.boolean().default(true),
       /** Only review PRs that carry all of these labels. */

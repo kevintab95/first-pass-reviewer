@@ -85,6 +85,20 @@ export async function getPr(
 }
 
 /** True if `login` has an unsubmitted review on the PR (only visible with that user's token). */
+/** Logins that have submitted (not just drafted) a review on the PR. */
+export async function listPastReviewers(
+  gh: GitHub,
+  repo: string,
+  number: number,
+): Promise<string[]> {
+  const reviews = await gh.paginate(gh.rest.pulls.listReviews, {
+    ...splitRepo(repo),
+    pull_number: number,
+    per_page: 100,
+  });
+  return reviews.filter((r) => r.state !== "PENDING" && r.user).map((r) => r.user!.login);
+}
+
 export async function hasPendingReview(
   gh: GitHub,
   repo: string,

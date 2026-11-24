@@ -15,6 +15,7 @@ repos: [org/repo, org/other] # repositories to watch
 select:
   assigned: true # PRs assigned to the reviewer
   reviewRequested: true # PRs where the reviewer is a requested reviewer
+  match: any # "any": either of the above; "all": every enabled one (see below)
   skipDraftPrs: true # skip PRs marked as draft by their author
   labels: [] # only PRs carrying all of these labels
   skipAuthors: [] # e.g. ["dependabot[bot]"]
@@ -52,6 +53,16 @@ issues:
   labels: [] # extra labels on report issues
   assignReviewer: true # assignment is what triggers the notification
 ```
+
+## Assigned and reviewer (`select.match: all`)
+
+Some projects (Oppia, for example) expect you to review only when the PR is assigned to
+you, not just because you are listed as a reviewer. With `match: all`, a PR is selected
+only when it is assigned to you **and** you are one of its reviewers. GitHub removes you
+from the requested reviewers once you submit a review, so having already reviewed the PR
+also counts as being a reviewer. This lets re-reviews through when the PR is reassigned
+to you. Checking for past reviews costs one extra API call, made only for PRs that are
+assigned to you but have no pending review request for you.
 
 ## Guidance the agent reads
 

@@ -12,6 +12,7 @@ repos:
 select:
   assigned: true # PRs assigned to you
   reviewRequested: true # PRs where you are a requested reviewer
+  match: any # "all" = only PRs that are both assigned to you and awaiting your review
   skipDraftPrs: true
   skipAuthors: ["dependabot[bot]"]
 
